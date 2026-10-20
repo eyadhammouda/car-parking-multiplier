@@ -21,3 +21,18 @@ jobs:
       - run: npm audit --audit-level=high
       - run: npm run build
       - run: npx vitest run
+
+  # Dependabot PRs merge themselves once the build, tests and audit pass,
+  # so vulnerable dependencies get fixed with nobody acting on an alert.
+  automerge:
+    needs: test
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - run: gh pr merge "$PR_URL" --squash --delete-branch
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
